@@ -1,0 +1,6 @@
+{
+    "symbol": "GOLD_USD",
+    "timeframe": "M5",
+    "logic": "ema_macd_bb_ichimoku_adx",
+    "mode": "daytrade"
+}

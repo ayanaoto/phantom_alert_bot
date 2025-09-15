@@ -1,0 +1,15 @@
+flask
+MetaTrader5
+pandas
+pytz
+mplfinance
+pandas-ta
+numpy<2.0
+Pillow
+requests
+lxml
+python-dotenv
+setuptools
+playsound==1.2.2
+html5lib
+beautifulsoup4

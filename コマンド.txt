@@ -1,0 +1,13 @@
+cd C:\Users\pc\OneDrive\Desktop\phantom_alert_bot
+.\venv\Scripts\activate
+python app.py
+
+
+
+http://127.0.0.1:5000
+
+
+cd "C:\Users\pc\OneDrive\Desktop\phantom_alert_bot"
+
+
+python prediction_analyzer.py

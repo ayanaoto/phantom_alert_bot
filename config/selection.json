@@ -1,0 +1,6 @@
+{
+  "symbol": "USDJPY",
+  "timeframe": "M1",
+  "mode": "phantom",
+  "logic": "strict"
+}

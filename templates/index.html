@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phantom Alert</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- PWA -->
+    <link rel="manifest" href="/static/manifest.webmanifest">
+    <meta name="theme-color" content="#0f172a">
+
+    <style>
+        body { margin: 0; font-family: 'Roboto', sans-serif; background-image: url('/static/bg_cyber_alt2.png'); background-size: cover; background-position: center; background-attachment: fixed; color: #E0E0E0; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        h1, h2, h3, .tab-button, button { font-family: 'Orbitron', sans-serif; }
+        body.page2-active .save-button-alt, body.page2-active .save-message-alt { display: block; }
+
+        /* Info panel */
+        .info-panel h3 { color: #00f0ff; border-bottom: 1px solid #00f0ff; padding-bottom: 8px; margin-top: 25px; }
+        .info-panel ul { padding-left: 20px; list-style: none; }
+        .info-panel li { margin-bottom: 15px; }
+        .info-panel .feature-title { font-weight: bold; color: #a0a0ff; }
+        .info-panel .feature-desc { font-size: 0.9em; color: #c0c0c0; padding-left: 10px; margin-top: 5px; }
+        .info-panel a { color: #ff3366; text-decoration: none; }
+        .info-panel a:hover { text-decoration: underline; }
+
+        /* Landing */
+        #initial-home-page { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; width: 100vw; background-color: rgba(26, 26, 46, 0.8); position: fixed; top: 0; left: 0; z-index: 1000; transition: opacity 1s ease-out; }
+        #initial-home-page.fade-out { opacity: 0; pointer-events: none; }
+        .title-container { text-align: center; margin-bottom: 50px; opacity: 0; transition: opacity 1s ease-in; }
+        .title { font-size: 4em; color: #00f0ff; text-shadow: 0 0 10px #00f0ff, 0 0 20px #00f0ff, 0 0 30px #00f0ff; animation: flicker 1.5s infinite alternate; }
+        @keyframes flicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
+        .start-button { background-color: #ff3366; color: white; border: none; padding: 15px 40px; font-size: 1.8em; border-radius: 5px; cursor: pointer; box-shadow: 0 0 15px #ff3366; transition: all 0.3s ease, opacity 1s ease-in; opacity: 0; }
+        .start-button:hover { background-color: #e6004c; box-shadow: 0 0 25px #ff3366; transform: scale(1.05); }
+
+        /* Main container */
+        #main-ui-container { display: none; flex-direction: column; width: 95%; max-width: 1200px; height: 90vh; max-height: 850px; background-color: rgba(42, 42, 62, 0.85); backdrop-filter: blur(5px); border-radius: 10px; box-shadow: 0 0 20px rgba(0, 240, 255, 0.5); border: 1px solid #00f0ff; overflow: hidden; opacity: 0; transition: opacity 1s ease-in; }
+        #main-ui-container.active { opacity: 1; display: flex; }
+        #page-content-wrapper { flex-grow: 1; overflow-y: auto; }
+        .page { display: none; padding: 20px; }
+        .page.active { display: block; }
+
+        /* Control bar */
+        .control-bar { position: fixed; top: 15px; right: 15px; display: flex; flex-direction: column; align-items: stretch; z-index: 1001; }
+        .control-button { padding: 5px 10px; font-size: 1.2em; margin-bottom: 8px; background-color: #4a4a5e; color: #e0e0e0; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s ease; text-align: center; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; }
+        .control-button:hover { background-color: #5a5a6e; }
+        .control-button.active { background-color: #00f0ff; color: #1a1a2e; font-weight: bold; }
+        .save-button-alt, .save-message-alt { display: none; }
+        .save-button-alt { background-color: #ff3366; color: white; font-weight: bold; margin-top: 15px; font-size: 12px; height: auto; width: auto; padding: 5px 10px; }
+        .save-button-alt:hover { background-color: #e6004c; }
+        .save-message-alt { color: #33ff33; font-size: 12px; text-align: right; margin-top: 5px; opacity: 0; transition: opacity 0.5s ease-out; font-weight: bold; height: 1em; }
+
+        /* Panels */
+        .content { display: flex; flex-direction: column; gap: 20px; }
+        .panel-wrapper { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; align-items: flex-start; }
+        .panel { background-color: rgba(43, 43, 64, 0.7); border: 1px solid #4a4a5e; border-radius: 8px; padding: 20px; box-shadow: 0 0 10px rgba(0, 240, 255, 0.2); flex: 1; min-width: 300px; box-sizing: border-box; }
+        .sign-panel { max-width: calc(50% - 10px); }
+        .settings-panel, .info-panel { max-width: 100%; }
+        .log-content { height: 200px; overflow-y: auto; background-color: #1e1e2e; border: 1px solid #3a3a4e; padding: 10px; border-radius: 5px; font-size: 0.85em; color: #c0c0c0; margin-top: 10px; }
+        h2, h3 { color: #00f0ff; border-bottom: 2px solid #00f0ff; padding-bottom: 5px; margin-top: 0; margin-bottom: 15px; }
+        .sign-info p { margin: 4px 0; font-size: 0.9em; }
+        .sign-info p span { font-weight: bold; color: #a0a0ff; }
+        .signal-type { font-family: 'Orbitron', sans-serif; font-size: 1.6em; font-weight: bold; text-align: center; padding: 5px; margin: 8px 0; border-radius: 5px; background-color: #3a3a4e; color: #e0e0e0; transition: background-color 0.3s ease, color 0.3s ease; }
+        .signal-type.buy { background-color: #00cc00; color: white; box-shadow: 0 0 10px #00cc00; }
+        .signal-type.sell { background-color: #cc0000; color: white; box-shadow: 0 0 10px #cc0000; }
+        .signal-chart { width: 100%; max-width: 600px; object-fit: contain; border: 1px solid #4a4a5e; border-radius: 5px; margin-top: 15px; background-color: #1e1e2e; }
+
+        .setting-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 8px; color: #a0a0ff; font-weight: bold; }
+        input[type="number"], select, input[type="radio"] + label { padding: 8px; border-radius: 5px; border: 1px solid #4a4a5e; background-color: #1e1e2e; color: #e0e0e0; font-size: 1em; width: 100%; box-sizing: border-box; }
+        select { appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292%22%20height%3D%22292%22%3E%3Cpath%20fill%3D%22%23e0e0e0%22%20d%3D%22M287%2C106.5L146%2C247.5L5%2C106.5H287z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 10px center; background-size: 12px; }
+        .radio-group { display: flex; gap: 15px; margin-top: 10px; }
+        input[type="radio"] { display: none; }
+        input[type="radio"] + label { cursor: pointer; padding: 10px 20px; border: 2px solid #00f0ff; transition: all 0.3s ease; width: auto; text-align: center; }
+        input[type="radio"]:checked + label { background-color: #00f0ff; color: #1a1a2e; box-shadow: 0 0 10px #00f0ff; }
+
+        /* Tabs */
+        .tab-container { flex-shrink: 0; display: flex; justify-content: space-around; background-color: rgba(30, 30, 46, 0.8); border-top: 1px solid #3a3a4e; padding: 10px 0; }
+        .tab-button { background-color: transparent; color: #a0a0ff; border: none; padding: 10px 15px; font-size: 1em; cursor: pointer; transition: color 0.3s ease, background-color 0.3s ease; flex-grow: 1; text-align: center; border-radius: 5px; margin: 0 5px; }
+        .tab-button:hover { color: #00f0ff; background-color: #3a3a4e; }
+        .tab-button.active { color: #1a1a2e; background-color: #00f0ff; font-weight: bold; }
+
+        /* Analysis */
+        #analysisResultChart { width: 100%; max-width: 800px; margin-top: 20px; border: 1px solid #4a4a5e; border-radius: 5px; background-color: #1e1e2e;}
+        #analysisResultPredictions { margin-top: 20px; background-color: #1e1e2e; padding: 15px; border-radius: 5px; white-space: pre-wrap; font-family: monospace; }
+        .analysis-controls { display: flex; gap: 10px; align-items: center; }
+        .analysis-controls button { height: 40px; margin-top: 25px; cursor: pointer; background-color: #ff3366; color: white; border: none; border-radius: 5px; padding: 0 20px; }
+        .analysis-controls button:disabled { background-color: #555; cursor: not-allowed; }
+
+        @media (max-width: 768px) {
+            #main-ui-container { height: 95vh; max-height: none; }
+            .title { font-size: 2.5em; }
+            .start-button { font-size: 1.4em; padding: 12px 30px; }
+            .panel-wrapper, .log-area-container { flex-direction: column; align-items: center; }
+            .panel, .log-area { max-width: 100%; }
+            .signal-chart { height: 250px; }
+            /* 背景固定はモバイルで重いので解除 */
+            body { background-attachment: scroll; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Landing -->
+    <div id="initial-home-page" aria-label="Initial screen">
+        <div class="title-container"><h1 class="title">Phantom Alert</h1></div>
+        <button class="start-button" id="startButton" aria-label="Start">START</button>
+    </div>
+
+    <!-- Controls -->
+    <div class="control-bar" aria-label="Global controls">
+        <button class="control-button" id="bgmToggle" title="BGM ON/OFF" aria-label="Toggle BGM">🎵</button>
+        <button class="control-button" id="langToggle" title="言語切り替え / Language" aria-label="Toggle language">🌐</button>
+        <button class="control-button save-button-alt" id="saveSettings" data-lang-key="save" aria-label="Save settings">保存</button>
+        <p class="save-message-alt" id="saveMessage" role="status" aria-live="polite"></p>
+    </div>
+
+    <!-- Main UI -->
+    <div id="main-ui-container" role="main" aria-label="Main UI">
+        <div id="page-content-wrapper">
+            <!-- Page1 -->
+            <div id="page1" class="page active" aria-labelledby="tab-sign">
+                <div class="content">
+                    <div class="panel-wrapper">
+                        <div class="panel sign-panel">
+                            <h2 data-lang-key="latestSignal">最新シグナル</h2>
+                            <div class="sign-info">
+                                <p><span data-lang-key="symbol">通貨ペア</span>: <span id="signalSymbol">N/A</span></p>
+                                <p><span data-lang-key="timeframe">時間足</span>: <span id="signalTimeframe">N/A</span></p>
+                                <p><span data-lang-key="currentPrice">現在価格</span>: <span id="currentPrice">N/A</span></p>
+                                <p><span data-lang-key="description">説明</span>: <span id="signalDesc"></span></p>
+                                <div class="signal-type" id="signalType">NONE</div>
+                                <p><span data-lang-key="entry">エントリー</span>: <span id="signalEntry">N/A</span></p>
+                                <p><span data-lang-key="tp">利確</span>: <span id="signalTP">N/A</span></p>
+                                <p><span data-lang-key="sl">損切</span>: <span id="signalSL">N/A</span></p>
+                            </div>
+                            <img src="/static/default_chart.png" alt="Chart" class="signal-chart" id="signalChart">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page2 -->
+            <div id="page2" class="page" aria-labelledby="tab-settings">
+                <div class="content">
+                    <div class="panel-wrapper">
+                        <div class="panel settings-panel">
+                            <h2 data-lang-key="settings">設定</h2>
+
+                            <div class="setting-group">
+                                <label data-lang-key="tradingMode">取引モード</label>
+                                <div class="radio-group" role="group" aria-label="Trading mode">
+                                    <input type="radio" id="modeScalp" name="mode" value="scalp">
+                                    <label for="modeScalp" data-lang-key="scalp">スキャルピング</label>
+
+                                    <input type="radio" id="modeDaytrade" name="mode" value="daytrade">
+                                    <label for="modeDaytrade" data-lang-key="daytrade">デイトレード</label>
+                                </div>
+                            </div>
+
+                            <div class="setting-group">
+                                <label for="lotSize" data-lang-key="lotSize">ロット数</label>
+                                <input type="number" id="lotSize" name="lotSize" step="0.01" min="0.01">
+                            </div>
+
+                            <div class="setting-group">
+                                <label data-lang-key="autoTrading">自動売買モード</label>
+                                <div class="radio-group" role="group" aria-label="Auto trading">
+                                    <input type="radio" id="autoTradingOff" name="autotrade" value="false">
+                                    <label for="autoTradingOff" data-lang-key="autoTradingOff">監視のみ</label>
+
+                                    <input type="radio" id="autoTradingOn" name="autotrade" value="true">
+                                    <label for="autoTradingOn" data-lang-key="autoTradingOn">実行する</label>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page3 -->
+            <div id="page3" class="page" aria-labelledby="tab-logs">
+                <div class="content">
+                    <div class="setting-group">
+                        <label for="logSymbolSelect" data-lang-key="logSymbolSelect">表示するログを選択</label>
+                        <select id="logSymbolSelect"></select>
+                    </div>
+                    <div id="singleLogContent" class="log-content"></div>
+                </div>
+            </div>
+
+            <!-- Page4 -->
+            <div id="page4" class="page" aria-labelledby="tab-info">
+                <div class="content">
+                    <div class="panel info-panel" style="max-width: 100%;">
+                        <h2 data-lang-key="appName">Phantom Alert：アプリケーション概要</h2>
+                        <p data-lang-key="appDesc">「Phantom Alert」は、高機能な取引プラットフォームであるMT5（MetaTrader 5）のリアルタイム価格データと連携して動作する、自動シグナル生成アプリケーションです。内部に組み込まれた取引ロジックに基づき、売買のチャンスを24時間監視します。シグナルが検知されると、LINEやGmailへの通知、そしてこのWeb UI（ユーザーインターフェース）を通じて、利用者に情報をリアルタイムで提供することを目的としています。</p>
+
+                        <h3 data-lang-key="features">特徴</h3>
+                        <ul>
+                            <li>
+                                <span class="feature-title" data-lang-key="feature1_title">• マルチ通貨ペア・マルチ時間足対応</span>
+                                <p class="feature-desc" data-lang-key="feature1_desc">USDJPY（ドル円）、EURUSD（ユーロドル）、GOLD（ゴールド）、BTCUSD（ビットコイン）など、複数の金融商品を同時に監視できます。さらに、M1（1分足）のような短期足からD1（日足）といった長期足まで、複数の時間軸で分析を行い、多様な取引スタイルに対応します。</p>
+                            </li>
+                            <li>
+                                <span class="feature-title" data-lang-key="feature2_title">• 最適化された取引ロジック</span>
+                                <p class="feature-desc" data-lang-key="feature2_desc">単一のテクニカル指標に頼るのではなく、RSI、MACD、ストキャスティクス、ボリンジャーバンド、複数の指数移動平均（EMA）などを組み合わせた、複合的な分析を行います。長期のトレンドに順張りする「トレンドフィルター」機能も搭載し、信頼性の高いシグナル生成を目指しています。</p>
+                            </li>
+                            <li>
+                                <span class="feature-title" data-lang-key="feature3_title">• LINE/Gmail通知機能</span>
+                                <p class="feature-desc" data-lang-key="feature3_desc">シグナル発生時に、ご指定のLINEアカウントやGmailアドレスへ即座に通知を送信します。通知には、シグナルの根拠となったテクニカル情報に加え、その時点でのチャート画像を添付することができ、外出先でも視覚的に状況を把握できます。</p>
+                            </li>
+                            <li>
+                                <span class="feature-title" data-lang-key="feature4_title">• Web UIでのリアルタイム監視と設定</span>
+                                <p class="feature-desc" data-lang-key="feature4_desc">現在ご覧になっているこのWeb画面を通じて、最新のシグナル、過去のログなどをリアルタイムで確認できます。「設定」タブからは、取引モード（スキャルピング/デイトレード）の切り替えや、自動売買の有効化/無効化など、ボットの動作を直接コントロールすることが可能です。</p>
+                            </li>
+                        </ul>
+
+                        <h3 data-lang-key="disclaimer">免責事項</h3>
+                        <p data-lang-key="disclaimerText">「Phantom Alert」が提供する売買シグナルは、あくまで過去の価格データに基づいたテクニカル分析の結果であり、将来の市場の動きを保証するものではありません。市場には予測不可能な多くの要因が存在します。このアプリケーションを利用した投資に関する最終的な判断は、全て利用者ご自身の責任において行ってください。</p>
+
+                        <h3 data-lang-key="contact">お問い合わせ</h3>
+                        <p data-lang-key="contactText">アプリケーションに関するご不明な点や、機能追加などのご要望がありましたら、以下のメールアドレスまでご連絡ください。 <a href="mailto:support@phantom-alert.com">support@phantom-alert.com</a></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page5 -->
+            <div id="page5" class="page" aria-labelledby="tab-analysis">
+                <div class="panel" style="max-width: 100%;">
+                    <h2 data-lang-key="analysisTab">手動ライン分析</h2>
+                    <div class="setting-group analysis-controls">
+                        <div>
+                            <label for="analysisSymbol">通貨ペア</label>
+                            <select id="analysisSymbol"></select>
+                        </div>
+                        <div>
+                            <label for="analysisTimeframe">時間足</label>
+                            <select id="analysisTimeframe">
+                                <option value="M5">5分足</option>
+                                <option value="M15">15分足</option>
+                                <option value="H1" selected>1時間足</option>
+                                <option value="D1">日足</option>
+                            </select>
+                        </div>
+                        <button id="runAnalysisBtn">分析実行</button>
+                    </div>
+                    <div id="analysisResultArea">
+                        <p id="analysisStatus">分析したい通貨ペアと時間足を選んで、「分析実行」ボタンを押してください。</p>
+                        <pre id="analysisResultPredictions"></pre>
+                        <img id="analysisResultChart" src="" style="display: none;" alt="Analysis chart"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tab-container" role="tablist" aria-label="Primary tabs">
+            <button class="tab-button active" id="tab-sign" role="tab" aria-selected="true" onclick="showPage('page1', this)" data-lang-key="signPanelTab">サインパネル</button>
+            <button class="tab-button" id="tab-settings" role="tab" aria-selected="false" onclick="showPage('page2', this)" data-lang-key="settingsTab">設定</button>
+            <button class="tab-button" id="tab-logs" role="tab" aria-selected="false" onclick="showPage('page3', this)" data-lang-key="logsTab">ログ</button>
+            <button class="tab-button" id="tab-info" role="tab" aria-selected="false" onclick="showPage('page4', this)" data-lang-key="infoTab">情報</button>
+            <button class="tab-button" id="tab-analysis" role="tab" aria-selected="false" onclick="showPage('page5', this)" data-lang-key="analysisTab">分析パネル</button>
+        </div>
+    </div>
+
+    <!-- Audio -->
+    <audio id="bgm" src="/static/bgm.mp3" loop></audio>
+    <audio id="clickSound" src="/static/sound_scalp.mp3"></audio>
+    <audio id="buySound" src="/static/buy.mp3"></audio>
+    <audio id="sellSound" src="/static/sell.mp3"></audio>
+
+    <script>
+        // --- Global Variables & Elements ---
+        const bgm = document.getElementById('bgm');
+        const clickSound = document.getElementById('clickSound');
+        const initialHomePage = document.getElementById('initial-home-page');
+        const mainUiContainer = document.getElementById('main-ui-container');
+        const bgmToggleButton = document.getElementById('bgmToggle');
+        const langToggleButton = document.getElementById('langToggle');
+        const saveSettingsButton = document.getElementById('saveSettings');
+
+        let isBgmPlaying = false;
+        let currentLang = 'ja';
+        let logUpdateInterval;
+
+        // AbortControllers for fetch cancellation
+        let signalsAbortController = null;
+        let logsAbortController = null;
+        let analysisAbortController = null;
+
+        // i18n dictionary
+        const translations = {
+            ja: {
+                save: "保存",
+                signPanelTab: "サインパネル",
+                settingsTab: "設定",
+                logsTab: "ログ",
+                infoTab: "情報",
+                analysisTab: "分析パネル",
+                logSymbolSelect: "表示するログを選択",
+                latestSignal: "最新シグナル",
+                symbol: "通貨ペア",
+                timeframe: "時間足",
+                currentPrice: "現在価格",
+                description: "説明",
+                entry: "エントリー",
+                tp: "利確",
+                sl: "損切",
+                settings: "設定",
+                tradingMode: "取引モード",
+                scalp: "スキャルピング",
+                daytrade: "デイトレード",
+                lotSize: "ロット数",
+                autoTrading: "自動売買モード",
+                autoTradingOff: "監視のみ",
+                autoTradingOn: "実行する",
+                appName: "Phantom Alert：アプリケーション概要",
+                appDesc: "「Phantom Alert」は、高機能な取引プラットフォームであるMT5（MetaTrader 5）のリアルタイム価格データと連携して動作する、自動シグナル生成アプリケーションです。内部に組み込まれた取引ロジックに基づき、売買のチャンスを24時間監視します。シグナルが検知されると、LINEやGmailへの通知、そしてこのWeb UI（ユーザーインターフェース）を通じて、利用者に情報をリアルタイムで提供することを目的としています。",
+                features: "特徴",
+                feature1_title: "• マルチ通貨ペア・マルチ時間足対応",
+                feature1_desc: "USDJPY（ドル円）、EURUSD（ユーロドル）、GOLD（ゴールド）、BTCUSD（ビットコイン）など、複数の金融商品を同時に監視できます。さらに、M1（1分足）のような短期足からD1（日足）といった長期足まで、複数の時間軸で分析を行い、多様な取引スタイルに対応します。",
+                feature2_title: "• 最適化された取引ロジック",
+                feature2_desc: "単一のテクニカル指標に頼るのではなく、RSI、MACD、ストキャスティクス、ボリンジャーバンド、複数の指数移動平均（EMA）などを組み合わせた、複合的な分析を行います。長期のトレンドに順張りする「トレンドフィルター」機能も搭載し、信頼性の高いシグナル生成を目指しています。",
+                feature3_title: "• LINE/Gmail通知機能",
+                feature3_desc: "シグナル発生時に、ご指定のLINEアカウントやGmailアドレスへ即座に通知を送信します。通知には、シグナルの根拠となったテクニカル情報に加え、その時点でのチャート画像を添付することができ、外出先でも視覚的に状況を把握できます。",
+                feature4_title: "• Web UIでのリアルタイム監視と設定",
+                feature4_desc: "現在ご覧になっているこのWeb画面を通じて、最新のシグナル、過去のログなどをリアルタイムで確認できます。「設定」タブからは、取引モード（スキャルピング/デイトレード）の切り替えや、自動売買の有効化/無効化など、ボットの動作を直接コントロールすることが可能です。",
+                disclaimer: "免責事項",
+                disclaimerText: "「Phantom Alert」が提供する売買シグナルは、あくまで過去の価格データに基づいたテクニカル分析の結果であり、将来の市場の動きを保証するものではありません。市場には予測不可能な多くの要因が存在します。このアプリケーションを利用した投資に関する最終的な判断は、全て利用者ご自身の責任において行ってください。",
+                contact: "お問い合わせ",
+                contactText: "アプリケーションに関するご不明な点や、機能追加などのご要望がありましたら、以下のメールアドレスまでご連絡ください。"
+            },
+            en: {
+                save: "Save",
+                signPanelTab: "Signal Panel",
+                settingsTab: "Settings",
+                logsTab: "Logs",
+                infoTab: "Info",
+                analysisTab: "Analysis",
+                logSymbolSelect: "Select log to display",
+                latestSignal: "Latest Signal",
+                symbol: "Symbol",
+                timeframe: "Timeframe",
+                currentPrice: "Current Price",
+                description: "Description",
+                entry: "Entry",
+                tp: "Take Profit",
+                sl: "Stop Loss",
+                settings: "Settings",
+                tradingMode: "Trading Mode",
+                scalp: "Scalping",
+                daytrade: "Day Trading",
+                lotSize: "Lot Size",
+                autoTrading: "Auto Trading Mode",
+                autoTradingOff: "Monitor Only",
+                autoTradingOn: "Execute",
+                appName: "Phantom Alert: Application Overview",
+                appDesc: "Phantom Alert is a real-time signal-generation application that works with MetaTrader 5 (MT5). It continuously watches the market based on internal trading logic and notifies you via LINE, Gmail, and this web UI when opportunities arise.",
+                features: "Features",
+                feature1_title: "• Multi-symbol & Multi-timeframe",
+                feature1_desc: "Monitor multiple instruments like USDJPY, EURUSD, GOLD, and BTCUSD across timeframes from M1 to D1, supporting various trading styles.",
+                feature2_title: "• Optimized Trading Logic",
+                feature2_desc: "Combines RSI, MACD, Stochastic, Bollinger Bands, and multiple EMAs with a long-trend filter to produce more reliable signals.",
+                feature3_title: "• LINE / Gmail Notifications",
+                feature3_desc: "Sends instant notifications with technical context and chart images so you can confirm signals on the go.",
+                feature4_title: "• Real-time Web UI",
+                feature4_desc: "View the latest signals and logs in real time and control the bot’s behavior (mode, auto-trading) from the Settings tab.",
+                disclaimer: "Disclaimer",
+                disclaimerText: "Signals are based on historical data and do not guarantee future performance. Final investment decisions are your sole responsibility.",
+                contact: "Contact",
+                contactText: "For inquiries or feature requests, contact: "
+            }
+        };
+
+        function updateTexts(lang) {
+            document.querySelectorAll('[data-lang-key]').forEach(element => {
+                const key = element.getAttribute('data-lang-key');
+                if (translations[lang] && translations[lang][key]) {
+                    element.textContent = translations[lang][key];
+                }
+            });
+        }
+
+        function setImageSrc(imgElem, url) {
+            if (!imgElem) return;
+            const u = (url || '').trim();
+            if (!u) {
+                imgElem.src = '/static/default_chart.png';
+                return;
+            }
+            // Allow absolute, data URL, or relative
+            let finalUrl = u;
+            if (!(u.startsWith('http://') || u.startsWith('https://') || u.startsWith('data:'))) {
+                finalUrl = u.startsWith('/') ? u : '/' + u;
+            }
+            // Add timestamp param if none present
+            if (!finalUrl.includes('?')) finalUrl += `?t=${Date.now()}`;
+            imgElem.src = finalUrl;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Intro fade-in
+            setTimeout(() => {
+                const title = document.querySelector('.title-container');
+                const startBtn = document.getElementById('startButton');
+                if (title) title.style.opacity = 1;
+                if (startBtn) startBtn.style.opacity = 1;
+            }, 500);
+
+            // START
+            document.getElementById('startButton').addEventListener('click', () => {
+                clickSound.play().catch(()=>{});
+                initialHomePage.classList.add('fade-out');
+                setTimeout(() => {
+                    initialHomePage.style.display = 'none';
+                    mainUiContainer.style.display = 'flex';
+                    setTimeout(() => mainUiContainer.classList.add('active'), 10);
+                    bgm.play().then(()=>{ isBgmPlaying = true; bgmToggleButton.classList.add('active'); }).catch(()=>{});
+                    document.documentElement.lang = currentLang;
+                    updateTexts(currentLang);
+                    setupLogSelector();
+                    updateSignalData();
+                }, 1000);
+            });
+
+            // BGM toggle
+            bgmToggleButton.addEventListener('click', () => {
+                clickSound.play().catch(()=>{});
+                isBgmPlaying = !isBgmPlaying;
+                if (isBgmPlaying) { bgm.play().catch(()=>{}); } else { bgm.pause(); }
+                bgmToggleButton.classList.toggle('active', isBgmPlaying);
+            });
+
+            // Language toggle
+            langToggleButton.addEventListener('click', () => {
+                clickSound.play().catch(()=>{});
+                currentLang = (currentLang === 'ja') ? 'en' : 'ja';
+                document.documentElement.lang = currentLang;
+                updateTexts(currentLang);
+            });
+
+            // Save settings (with server + localStorage fallback)
+            saveSettingsButton.addEventListener('click', async () => {
+                clickSound.play().catch(()=>{});
+                const payload = {
+                    mode: (document.querySelector('input[name="mode"]:checked') || {}).value || 'scalp',
+                    auto_trading: (document.querySelector('input[name="autotrade"]:checked') || {}).value === 'true',
+                    lot_size: parseFloat(document.getElementById('lotSize').value) || 0.01
+                };
+                const saveMessage = document.getElementById('saveMessage');
+                const okText = currentLang === 'en' ? 'Settings saved!' : '設定が保存されました！';
+                const ngText = currentLang === 'en' ? 'Failed to save settings. Saved locally.' : '設定の保存に失敗。ローカルに保存しました。';
+
+                try {
+                    const response = await fetch('/update_settings', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error('server error');
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        localStorage.setItem('phantom_settings', JSON.stringify(payload));
+                        saveMessage.textContent = okText;
+                    } else {
+                        localStorage.setItem('phantom_settings', JSON.stringify(payload));
+                        saveMessage.textContent = ngText;
+                    }
+                } catch (e) {
+                    localStorage.setItem('phantom_settings', JSON.stringify(payload));
+                    saveMessage.textContent = ngText;
+                }
+                saveMessage.style.opacity = 1;
+                setTimeout(() => { saveMessage.style.opacity = 0; }, 2000);
+            });
+
+            // Load settings (server then localStorage fallback)
+            (async () => {
+                try {
+                    const r = await fetch('/get_settings');
+                    if (!r.ok) throw new Error('server error');
+                    const s = await r.json();
+                    document.getElementById(s.mode === 'daytrade' ? 'modeDaytrade' : 'modeScalp').checked = true;
+                    document.getElementById(s.auto_trading ? 'autoTradingOn' : 'autoTradingOff').checked = true;
+                    document.getElementById('lotSize').value = s.lot_size || 0.01;
+                    localStorage.setItem('phantom_settings', JSON.stringify(s));
+                } catch {
+                    const local = localStorage.getItem('phantom_settings');
+                    if (local) {
+                        const s = JSON.parse(local);
+                        document.getElementById(s.mode === 'daytrade' ? 'modeDaytrade' : 'modeScalp').checked = true;
+                        document.getElementById(s.auto_trading ? 'autoTradingOn' : 'autoTradingOff').checked = true;
+                        document.getElementById('lotSize').value = s.lot_size || 0.01;
+                    } else {
+                        document.getElementById('modeScalp').checked = true;
+                        document.getElementById('autoTradingOff').checked = true;
+                        document.getElementById('lotSize').value = 0.01;
+                    }
+                }
+            })();
+
+            // Periodic signal refresh
+            setInterval(updateSignalData, 3000);
+        });
+
+        // Tab switching with ARIA
+        function showPage(pageId, clickedButton) {
+            clickSound.play().catch(()=>{});
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+
+            if (clickedButton) {
+                document.querySelectorAll('.tab-button').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
+                clickedButton.classList.add('active');
+                clickedButton.setAttribute('aria-selected', 'true');
+            }
+
+            document.body.classList.toggle('page2-active', pageId === 'page2');
+
+            // Stop logs refresh & abort pending fetch when leaving page3
+            if (logUpdateInterval) clearInterval(logUpdateInterval);
+            if (logsAbortController) { logsAbortController.abort(); logsAbortController = null; }
+
+            if (pageId === 'page3') {
+                setupLogSelector().then(fetchAndDisplaySingleLog);
+                logUpdateInterval = setInterval(fetchAndDisplaySingleLog, 5000);
+            }
+            if (pageId === 'page5') { setupAnalysisPage(); }
+        }
+
+        async function updateSignalData() {
+            try {
+                if (signalsAbortController) signalsAbortController.abort();
+                signalsAbortController = new AbortController();
+
+                const response = await fetch('/api/signals', { signal: signalsAbortController.signal });
+                if (!response.ok) return;
+
+                const allSignals = await response.json();
+                const data = (allSignals && allSignals.length > 0) ? allSignals[allSignals.length - 1] : null;
+                if (data) {
+                    const price = parseFloat(data.price);
+                    const tp = parseFloat(data.tp);
+                    const sl = parseFloat(data.sl);
+                    document.getElementById('signalSymbol').textContent = data.symbol || 'N/A';
+                    document.getElementById('signalTimeframe').textContent = data.timeframe || 'N/A';
+                    document.getElementById('currentPrice').textContent = Number.isFinite(price) ? price.toFixed(3) : 'N/A';
+                    document.getElementById('signalDesc').textContent = data.desc || (currentLang === 'en' ? 'No description' : '説明なし');
+
+                    const signalTypeElem = document.getElementById('signalType');
+                    const sig = (data.signal || 'NONE').toUpperCase();
+                    signalTypeElem.textContent = sig;
+                    signalTypeElem.classList.toggle('buy', data.signal && data.signal.toLowerCase() === 'buy');
+                    signalTypeElem.classList.toggle('sell', data.signal && data.signal.toLowerCase() === 'sell');
+
+                    document.getElementById('signalEntry').textContent = Number.isFinite(price) ? price.toFixed(3) : 'N/A';
+                    document.getElementById('signalTP').textContent = Number.isFinite(tp) ? tp.toFixed(3) : 'N/A';
+                    document.getElementById('signalSL').textContent = Number.isFinite(sl) ? sl.toFixed(3) : 'N/A';
+
+                    setImageSrc(document.getElementById('signalChart'), data.image_url);
+                }
+            } catch (error) {
+                if (error.name !== 'AbortError') console.error("Failed to fetch signal data:", error);
+            }
+        }
+
+        async function setupLogSelector() {
+            const selectElement = document.getElementById('logSymbolSelect');
+            if (selectElement.options.length > 0) return;
+            try {
+                const response = await fetch('/api/symbols');
+                const symbols = await response.json();
+                symbols.forEach(symbol => {
+                    const option = document.createElement('option');
+                    option.value = symbol; option.textContent = symbol;
+                    selectElement.appendChild(option);
+                });
+                selectElement.addEventListener('change', fetchAndDisplaySingleLog);
+                if (symbols.length > 0) { fetchAndDisplaySingleLog(); }
+            } catch (error) { console.error('Failed to setup log selector:', error); }
+        }
+
+        async function fetchAndDisplaySingleLog() {
+            const symbol = document.getElementById('logSymbolSelect').value;
+            if (!symbol) return;
+            const logContentElement = document.getElementById('singleLogContent');
+
+            try {
+                if (logsAbortController) logsAbortController.abort();
+                logsAbortController = new AbortController();
+
+                const response = await fetch(`/api/logs/${encodeURIComponent(symbol)}`, { signal: logsAbortController.signal });
+                if (!response.ok) return;
+                const logs = await response.json();
+
+                // XSS-safe rendering
+                logContentElement.innerHTML = '';
+                const frag = document.createDocumentFragment();
+                for (const log of logs) {
+                    const div = document.createElement('div');
+                    const ts = `[${log.timestamp || 'N/A'}] `;
+                    const msg = (log.message || '');
+                    div.append(document.createTextNode(ts + msg));
+                    frag.appendChild(div);
+                }
+                logContentElement.appendChild(frag);
+                logContentElement.scrollTop = logContentElement.scrollHeight;
+            } catch (error) {
+                if (error.name !== 'AbortError') console.error(`Failed to fetch logs for ${symbol}:`, error);
+            }
+        }
+
+        async function setupAnalysisPage() {
+            const selectElement = document.getElementById('analysisSymbol');
+            if (selectElement.options.length > 0) return;
+            try {
+                const response = await fetch('/api/symbols');
+                const symbols = await response.json();
+                symbols.forEach(symbol => {
+                    const option = document.createElement('option');
+                    option.value = symbol; option.textContent = symbol;
+                    selectElement.appendChild(option);
+                });
+            } catch (error) { console.error('Failed to setup analysis selector:', error); }
+            document.getElementById('runAnalysisBtn').addEventListener('click', runManualAnalysis);
+        }
+
+        async function runManualAnalysis() {
+            const statusElem = document.getElementById('analysisStatus');
+            const predictionsElem = document.getElementById('analysisResultPredictions');
+            const chartElem = document.getElementById('analysisResultChart');
+            const button = document.getElementById('runAnalysisBtn');
+
+            statusElem.textContent = currentLang === 'en' ? 'Running analysis...' : '分析を実行中...';
+            button.disabled = true;
+
+            const payload = {
+                symbol: document.getElementById('analysisSymbol').value,
+                timeframe: document.getElementById('analysisTimeframe').value
+            };
+
+            try {
+                if (analysisAbortController) analysisAbortController.abort();
+                analysisAbortController = new AbortController();
+
+                const response = await fetch('/api/run_analysis', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload),
+                    signal: analysisAbortController.signal
+                });
+                if (!response.ok) throw new Error(`Server error: ${response.statusText}`);
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    statusElem.textContent = currentLang === 'en' ? 'Analysis completed.' : '分析が完了しました。';
+                    const predictionHeader = currentLang === 'en'
+                        ? `--- Future Scenarios (${payload.symbol} ${payload.timeframe}) ---\n* Current Price: ${data.current_price}\n--------------------------------------------------\n`
+                        : `--- 未来予測シナリオ (${payload.symbol} ${payload.timeframe}) ---\n* 現在価格: ${data.current_price}\n--------------------------------------------------\n`;
+                    const lines = Array.isArray(data.predictions) ? data.predictions : [];
+                    predictionsElem.textContent = predictionHeader + lines.map(p => `- ${p}`).join('\n');
+
+                    setImageSrc(chartElem, data.image_url);
+                    chartElem.style.display = 'block';
+                } else {
+                    statusElem.textContent = (currentLang === 'en'
+                        ? `Analysis failed: ${data.message}`
+                        : `分析に失敗しました: ${data.message}`);
+                }
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    console.error('Analysis failed:', error);
+                    statusElem.textContent = (currentLang === 'en'
+                        ? 'Error occurred during analysis.'
+                        : '分析中にエラーが発生しました。');
+                }
+            } finally {
+                button.disabled = false;
+            }
+        }
+    </script>
+
+    <!-- Service Worker registration -->
+    <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        // 可能ならルート直下に /sw.js を置いて scope を '/' にするのが理想。
+        // 静的配信のままでも以下で動作します:
+        navigator.serviceWorker.register('/static/sw.js', { scope: '/' })
+          .then(reg => console.log('[SW] registered:', reg.scope))
+          .catch(err => console.warn('[SW] registration failed:', err));
+      });
+    }
+    </script>
+</body>
+</html>

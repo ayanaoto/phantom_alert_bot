@@ -1,0 +1,10 @@
+{
+    "symbol": "USDJPY",
+    "timeframe": "M1",
+    "logic": "ema_macd_bb_ichimoku_adx",
+    "mode": "scalp",
+    "auto_trading": false,
+    "lot_size": 0.1,
+    "stop_loss_pips": 20,
+    "take_profit_pips": 40
+}

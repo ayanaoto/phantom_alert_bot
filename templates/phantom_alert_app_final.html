@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phantom Alert</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* 全体の設定 */
+        body {
+            margin: 0;
+            font-family: 'Orbitron', sans-serif;
+            background-image: url('/static/bg_cyber_alt2.png');
+            background-size: cover;
+            background-position: center 12%;
+            background-attachment: fixed;
+            color: #00FF99; /* 全体の基本文字色をネオングリーンに */
+            overflow: hidden; /* 画面全体のスクロールを禁止 */
+        }
+
+        /* 初期ホーム画面 */
+        #initial-home-page {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+            background-color: #1a1a2e;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            transition: opacity 1s ease-out;
+        }
+
+        #initial-home-page.fade-out {
+            opacity: 0;
+        }
+
+        .title-container {
+            position: relative;
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+            margin-bottom: 50px;
+            opacity: 0; /* 初期は非表示 */
+            transition: opacity 1s ease-in 3s; /* 3秒遅延でフェードイン */
+        }
+
+        .title {
+            font-size: 4em;
+            color: #00f0ff; /* ネオンブルー */
+            text-shadow: 0 0 10px #00f0ff, 0 0 20px #00f0ff, 0 0 30px #00f0ff;
+            animation: flicker 1.5s infinite alternate; /* 点滅アニメーション */
+        }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .start-button {
+            background-color: #ff3366; /* ネオンピンク */
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.8em;
+            font-family: 'Orbitron', sans-serif;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 0 15px #ff3366;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease, opacity 1s ease-in 4s; /* 4秒遅延でフェードイン */
+            opacity: 0; /* 初期は非表示 */
+        }
+
+        .start-button:hover {
+            background-color: #e6004c;
+            box-shadow: 0 0 25px #ff3366;
+            transform: scale(1.05);
+        }
+
+        /* メインUIコンテナ */
+        #main-ui-container {
+            display: none; /* 初期は非表示 */
+            flex-direction: column;
+            width: 95%;
+            max-width: 1200px; /* PCでの最大幅 */
+            background-color: #2a2a3e;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.5); /* 全体的なネオン効果 */
+            overflow: hidden; /* コンテンツの角を丸くする */
+            position: relative;
+            opacity: 0; /* フェードイン用 */
+            transition: opacity 1s ease-in;
+        }
+
+        #main-ui-container.active {
+            opacity: 1;
+            display: flex; /* フェードイン後にflexに戻す */
+        }
+
+        /* 制御バー */
+        .control-bar {
+            display: flex;
+            justify-content: flex-end; /* 右寄せ */
+            padding: 10px 20px;
+            background-color: #1e1e2e;
+            border-bottom: 1px solid #3a3a4e;
+            gap: 10px;
+        }
+
+        .control-button {
+            background-color: #4a4a5e;
+            color: #e0e0e0;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.3s ease;
+            min-width: 100px;        /* 幅を固定してぶれ防止 */
+            height: 38px;            /* 高さを固定 */
+            line-height: 22px;       /* 行の高さも明示 */
+            box-sizing: border-box;  /* ボーダー・パディング含めて安定化 */
+            text-align: center;
+        }
+
+        .control-button:hover {
+            background-color: #5a5a6e;
+        }
+
+        .control-button.active {
+            background-color: #00f0ff;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+
+        /* ページ共通スタイル */
+        .page {
+            display: none;
+            padding: 20px;
+        }
+
+        .page.active {
+            display: block; /* タブ切り替えで表示 */
+        }
+
+        .content {
+            display: flex;
+            flex-direction: column; /* デフォルトは縦並び */
+            gap: 20px; /* パネル間の余白 */
+        }
+
+        /* 新しい panel-wrapper クラス */
+        .panel-wrapper {
+            display: flex;
+            flex-wrap: wrap; /* パネルが横に並びきらない場合に折り返す */
+            gap: 20px; /* パネル間の余白 */
+            justify-content: center; /* 中央寄せ */
+            align-items: flex-start; /* 上揃え */
+        }
+
+        /* 各パネルの共通スタイル */
+        .sign-panel,
+        .settings-panel,
+        .log-area,
+        .info-panel {
+            background-color: #2b2b40;
+            border: 1px solid #4a4a5e;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+            flex: 1; /* 親要素内で利用可能なスペースを埋める */
+            min-width: 300px; /* 小さすぎる幅を避ける */
+            max-width: calc(50% - 10px); /* 2カラム表示の最大幅 */
+            box-sizing: border-box; /* paddingとborderをwidthに含める */
+        }
+        
+        /* ログエリアは縦に並ぶように調整 */
+        .log-area-container {
+            display: flex;
+            flex-wrap: wrap; /* 折り返しを有効にする */
+            gap: 20px; /* ログエリア間の余白 */
+            justify-content: center; /* 中央寄せ */
+            align-items: flex-start;
+        }
+
+        .log-area {
+            flex: 1;
+            min-width: 280px; /* スマホでも見やすい最小幅 */
+            max-width: calc(50% - 10px); /* PCで2カラム */
+            box-sizing: border-box;
+            background-color: #2b2b40;
+            border: 1px solid #4a4a5e;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 0 8px rgba(0, 240, 255, 0.15);
+        }
+
+        /* ログ内容のコンテナ */
+        .log-content {
+            height: 200px; /* ログ表示エリアの高さ固定 */
+            overflow-y: auto; /* スクロール可能に */
+            background-color: #1e1e2e;
+            border: 1px solid #3a3a4e;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 0.85em;
+            color: #c0c0c0;
+            margin-top: 10px;
+        }
+
+        /* ログ行のスタイル */
+        .log-line {
+            padding: 3px 0;
+            border-bottom: 1px dashed #3a3a4e;
+        }
+
+        .log-line:last-child {
+            border-bottom: none;
+        }
+
+        .log-line.buy {
+            color: #33ff33; /* 緑色 */
+        }
+
+        .log-line.sell {
+            color: #ff3333; /* 赤色 */
+        }
+
+        .log-line.neutral {
+            color: #c0c0c0; /* 通常色 */
+        }
+
+
+        h2, h3 {
+            color: #00f0ff;
+            border-bottom: 2px solid #00f0ff;
+            padding-bottom: 5px;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* サインパネル固有 */
+        .sign-info p {
+            margin: 8px 0;
+            font-size: 1.1em;
+        }
+
+        .sign-info p span {
+            font-weight: bold;
+            color: #a0a0ff; /* 薄い青紫 */
+        }
+
+        .signal-type {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2em;
+            font-weight: bold;
+            text-align: center;
+            padding: 10px;
+            margin: 15px 0;
+            border-radius: 5px;
+            background-color: #3a3a4e;
+            color: #e0e0e0;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .signal-type.buy {
+            background-color: #00cc00; /* 買いシグナル */
+            color: white;
+            box-shadow: 0 0 10px #00cc00;
+        }
+
+        .signal-type.sell {
+            background-color: #cc0000; /* 売りシグナル */
+            color: white;
+            box-shadow: 0 0 10px #cc0000;
+        }
+
+        .signal-chart {
+            width: 100%;
+            height: auto;
+            border: 1px solid #4a4a5e;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+
+        /* 設定パネル固有 */
+        .setting-group {
+            margin-bottom: 20px;
+        }
+
+        .setting-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #a0a0ff;
+            font-weight: bold;
+        }
+
+        select, input[type="radio"] + label {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #4a4a5e;
+            background-color: #1e1e2e;
+            color: #e0e0e0;
+            font-size: 1em;
+            width: 100%; /* 親要素の幅に合わせる */
+            box-sizing: border-box; /* パディングとボーダーを幅に含める */
+        }
+        
+        select {
+            appearance: none; /* デフォルトの矢印を非表示 */
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292%22%20height%3D%22292%22%3E%3Cpath%20fill%3D%22%23e0e0e0%22%20d%3D%22M287%2C106.5L146%2C247.5L5%2C106.5H287z%22%2F%3E%3C%2Fsvg%3E');
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 12px;
+        }
+
+
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        input[type="radio"] {
+            display: none; /* ラジオボタン自体を非表示 */
+        }
+
+        input[type="radio"] + label {
+            cursor: pointer;
+            padding: 10px 20px;
+            border: 2px solid #00f0ff; /* ネオンブルーの枠 */
+            background-color: #1e1e2e;
+            color: #e0e0e0;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            width: auto; /* ラジオボタンラベルは内容に合わせる */
+            text-align: center;
+        }
+
+        input[type="radio"]:checked + label {
+            background-color: #00f0ff;
+            color: #1a1a2e;
+            box-shadow: 0 0 10px #00f0ff;
+        }
+
+        .save-button {
+            background-color: #ff3366;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.1em;
+            font-family: 'Orbitron', sans-serif;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 0 10px #ff3366;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+            width: auto; /* ボタンは内容に合わせる */
+            margin-top: 20px;
+        }
+
+        .save-button:hover {
+            background-color: #e6004c;
+            box-shadow: 0 0 15px #ff3366;
+            transform: scale(1.02);
+        }
+
+        .save-message {
+            margin-top: 15px;
+            color: #33ff33; /* 成功メッセージは緑 */
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.5s ease-out;
+            text-align: center;
+        }
+
+        /* 情報パネル固有 */
+        .info-panel ul {
+            list-style: none;
+            padding: 0;
+            margin-top: 15px;
+        }
+
+        .info-panel ul li {
+            margin-bottom: 10px;
+            padding-left: 20px;
+            position: relative;
+            color: #c0c0c0;
+        }
+
+        .info-panel ul li::before {
+            content: '•';
+            color: #00f0ff;
+            font-size: 1.2em;
+            position: absolute;
+            left: 0;
+            top: -2px;
+        }
+
+        .info-panel a {
+            color: #00f0ff;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .info-panel a:hover {
+            color: #ff3366;
+            text-decoration: underline;
+        }
+
+        /* タブコンテナ */
+        .tab-container {
+            display: flex;
+            justify-content: space-around;
+            background-color: #1e1e2e;
+            border-top: 1px solid #3a3a4e;
+            padding: 10px 0;
+        }
+
+        .tab-button {
+            background-color: transparent;
+            color: #a0a0ff;
+            border: none;
+            padding: 10px 15px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: color 0.3s ease, background-color 0.3s ease;
+            flex-grow: 1; /* 等間隔に広がる */
+            text-align: center;
+            border-radius: 5px;
+            margin: 0 5px;
+        }
+
+        .tab-button:hover {
+            color: #00f0ff;
+            background-color: #3a3a4e;
+        }
+
+        .tab-button.active {
+            color: #1a1a2e;
+            background-color: #00f0ff;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+        }
+
+        /* レスポンシブデザイン */
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2.5em;
+            }
+
+            .start-button {
+                font-size: 1.4em;
+                padding: 12px 30px;
+            }
+
+            #main-ui-container {
+                width: 98%;
+                margin: 10px; /* 小さい画面での余白 */
+            }
+
+            .control-bar {
+                flex-direction: column;
+                align-items: flex-end;
+                padding: 10px;
+            }
+
+            .control-button {
+                width: auto; /* ボタンの幅を自動調整 */
+                margin-bottom: 5px;
+            }
+
+            .content {
+                flex-direction: column; /* スマホでは縦並び */
+            }
+
+            .panel-wrapper {
+                flex-direction: column; /* スマホでは縦並び */
+                align-items: center; /* 中央寄せ */
+            }
+
+            .sign-panel,
+            .settings-panel,
+            .log-area {
+                min-width: unset; /* 最小幅の制限を解除 */
+                max-width: 100%; /* 全幅を使用 */
+                width: 100%; /* 確実に全幅 */
+                margin: 0; /* マージンをリセット */
+            }
+            
+            .log-area-container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .tab-button {
+                font-size: 0.9em;
+                padding: 8px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="initial-home-page">
+        <div class="title-container">
+            <h1 class="title">Phantom Alert</h1>
+        </div>
+        <button class="start-button" id="startButton">START</button>
+    </div>
+
+    <div class="control-bar">
+        <button class="control-button" id="bgmToggle">BGM: ON</button>
+        <button class="control-button" id="langToggle">日本語</button>
+    </div>
+
+    <div id="main-ui-container">
+        <div id="page1" class="page active">
+            <div class="content">
+                <div class="panel-wrapper">
+                    <div class="sign-panel">
+                        <h2 data-lang-key="latestSignal">最新シグナル</h2>
+                        <div class="sign-info">
+                            <p><span data-lang-key="symbol">通貨ペア</span>: <span id="signalSymbol">N/A</span></p>
+                            <p><span data-lang-key="timeframe">時間足</span>: <span id="signalTimeframe">N/A</span></p>
+                            <p><span data-lang-key="currentPrice">現在価格</span>: <span id="currentPrice">N/A</span></p>
+                            <p><span data-lang-key="description">説明</span>: <span id="signalDesc"></span></p>
+                            <div class="signal-type" id="signalType">NONE</div>
+                            <p><span data-lang-key="entry">エントリー</span>: <span id="signalEntry">N/A</span></p>
+                            <p><span data-lang-key="tp">利確</span>: <span id="signalTP">N/A</span></p>
+                            <p><span data-lang-key="sl">損切</span>: <span id="signalSL">N/A</span></p>
+                        </div>
+                        <img src="/static/default_chart.png" alt="Chart" class="signal-chart" id="signalChart">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="page2" class="page">
+            <div class="content">
+                <div class="panel-wrapper">
+                    <div class="settings-panel">
+                        <h2 data-lang-key="settings">設定</h2>
+                        <div class="setting-group">
+                            <label for="selectSymbol" data-lang-key="currencyPair">通貨ペア</label>
+                            <select id="selectSymbol">
+                                <option value="USDJPY">USDJPY</option>
+                                <option value="EURUSD">EURUSD</option>
+                                <option value="GOLD_USD">GOLD_USD</option>
+                                <option value="BTCUSDT">BTCUSDT</option>
+                            </select>
+                        </div>
+                        <div class="setting-group">
+                            <label for="selectTimeframe" data-lang-key="timeframe">時間足</label>
+                            <select id="selectTimeframe">
+                                <option value="M1">M1</option>
+                                <option value="M5">M5</option>
+                                <option value="M15">M15</option>
+                                <option value="H1">H1</option>
+                                <option value="D1">D1</option> <!-- D1 オプションを追加 -->
+                            </select>
+                        </div>
+                        <div class="setting-group">
+                            <label data-lang-key="tradingMode">取引モード</label>
+                            <div class="radio-group">
+                                <input type="radio" id="modeScalp" name="mode" value="scalp" checked><label for="modeScalp" data-lang-key="scalp">スキャルピング</label>
+                                <input type="radio" id="modeDaytrade" name="mode" value="daytrade"><label for="modeDaytrade" data-lang-key="daytrade">デイトレード</label>
+                            </div>
+                        </div>
+                        <button class="save-button" id="saveSettings" data-lang-key="save">保存</button>
+                        <p class="save-message" id="saveMessage"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="page3" class="page">
+            <div class="content">
+                <div class="log-area-container">
+                    <div class="log-area">
+                        <h3 data-lang-key="usdjpyLog">USDJPY ログ</h3>
+                        <div id="log-usdjpy" class="log-content"></div>
+                    </div>
+                    <div class="log-area">
+                        <h3 data-lang-key="eurusdLog">EURUSD ログ</h3>
+                        <div id="log-eurusd" class="log-content"></div>
+                    </div>
+                    <div class="log-area">
+                        <h3 data-lang-key="goldusdLog">GOLD_USD ログ</h3>
+                        <div id="log-gold" class="log-content"></div>
+                    </div>
+                    <div class="log-area">
+                        <h3 data-lang-key="btcusdtLog">BTCUSDT ログ</h3>
+                        <div id="log-btc" class="log-content"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="page4" class="page">
+            <div class="content">
+                <div class="info-panel">
+                    <h2 data-lang-key="information">情報</h2>
+                    <p data-lang-key="infoDesc1">Phantom Alertは、MT5のデータを利用してリアルタイムで取引シグナルを生成し、LINE通知やWeb UIで情報を提供します。</p>
+                    <h3 data-lang-key="features">特徴:</h3>
+                    <ul>
+                        <li data-lang-key="feature1">• マルチ通貨ペア・マルチ時間足対応</li>
+                        <li data-lang-key="feature2">• 最適化された取引ロジック</li>
+                        <li data-lang-key="feature3">• LINE通知機能</li>
+                        <li data-lang-key="feature4">• Web UIでのリアルタイム監視と設定</li>
+                    </ul>
+                    <h3 data-lang-key="disclaimer">免責事項:</h3>
+                    <p data-lang-key="disclaimerText">Phantom Alertが提供するシグナルは、過去のデータに基づいた分析であり、将来の市場の動きを保証するものではありません。投資判断は自己責任で行ってください。</p>
+                    <h3 data-lang-key="contact">お問い合わせ:</h3>
+                    <p data-lang-key="contactText">ご不明な点やご要望がありましたら、<a href="mailto:support@phantom-alert.com">support@phantom-alert.com</a>までご連絡ください。</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-container">
+            <button class="tab-button active" onclick="showPage('page1', this)" data-lang-key="signPanelTab">サインパネル</button>
+            <button class="tab-button" onclick="showPage('page2', this)" data-lang-key="settingsTab">設定</button>
+            <button class="tab-button" onclick="showPage('page3', this)" data-lang-key="logsTab">ログ</button>
+            <button class="tab-button" onclick="showPage('page4', this)" data-lang-key="infoTab">情報</button>
+        </div>
+    </div>
+
+    <audio id="bgm" src="/static/bgm.mp3" loop></audio>
+    <audio id="clickSound" src="/static/sound_scalp.mp3"></audio>
+    <audio id="buySound" src="/static/buy.mp3"></audio>
+    <audio id="sellSound" src="/static/sell.mpm3"></audio>
+
+    <script>
+        // ここにJavaScriptコードを記述します。
+
+        // BGMや効果音用の要素取得
+        const bgm = document.getElementById('bgm');
+        const clickSound = document.getElementById('clickSound');
+        const buySound = document.getElementById('buySound');
+        const sellSound = document.getElementById('sellSound');
+
+        let currentSymbol = "USDJPY";
+        let currentTimeframe = "M1";
+        let currentLogic = "ema_macd_bb_ichimoku_adx";
+        let currentMode = "scalp";
+
+        // 初期ホーム画面の要素
+        const initialHomePage = document.getElementById('initial-home-page');
+        const titleContainer = document.querySelector('#initial-home-page .title-container');
+        const startButton = document.getElementById('startButton');
+        const mainUiContainer = document.getElementById('main-ui-container');
+
+        // BGM ON/OFF と言語切り替えボタン
+        const bgmToggleButton = document.getElementById('bgmToggle');
+        const langToggleButton = document.getElementById('langToggle');
+
+        let isBgmPlaying = false; // BGMの再生状態を追跡
+        let currentLang = 'ja'; // 現在の言語 (ja: 日本語, en: 英語)
+
+        // 多言語対応のテキストデータ
+        const translations = {
+            ja: {
+                latestSignal: "最新シグナル",
+                symbol: "通貨ペア",
+                timeframe: "時間足",
+                currentPrice: "現在価格",
+                description: "説明",
+                entry: "エントリー",
+                tp: "利確",
+                sl: "損切",
+                settings: "設定",
+                currencyPair: "通貨ペア",
+                tradingMode: "取引モード",
+                scalp: "スキャルピング",
+                daytrade: "デイトレード",
+                save: "保存",
+                usdjpyLog: "USDJPY ログ",
+                eurusdLog: "EURUSD ログ",
+                goldusdLog: "GOLD_USD ログ",
+                btcusdtLog: "BTCUSDT ログ",
+                information: "情報",
+                infoDesc1: "Phantom Alertは、MT5のデータを利用してリアルタイムで取引シグナルを生成し、LINE通知やWeb UIで情報を提供します。",
+                features: "特徴:",
+                feature1: "• マルチ通貨ペア・マルチ時間足対応",
+                feature2: "• 最適化された取引ロジック",
+                feature3: "• LINE通知機能",
+                feature4: "• Web UIでのリアルタイム監視と設定",
+                disclaimer: "免責事項:",
+                disclaimerText: "Phantom Alertが提供するシグナルは、過去のデータに基づいた分析であり、将来の市場の動きを保証するものではありません。投資判断は自己責任で行ってください。",
+                contact: "お問い合わせ:",
+                contactText: "ご不明な点やご要望がありましたら、support@phantom-alert.comまでご連絡ください。",
+                signPanelTab: "サインパネル",
+                settingsTab: "設定",
+                logsTab: "ログ",
+                infoTab: "情報",
+                bgmOn: "BGM: ON",
+                bgmOff: "BGM: OFF",
+                langJa: "日本語",
+                langEn: "English"
+            },
+            en: {
+                latestSignal: "Latest Signal",
+                symbol: "SYMBOL",
+                timeframe: "TIMEFRAME",
+                currentPrice: "CURRENT PRICE",
+                description: "DESCRIPTION",
+                entry: "ENTRY",
+                tp: "TP",
+                sl: "SL",
+                settings: "Settings",
+                currencyPair: "Currency Pair",
+                tradingMode: "Trading Mode",
+                scalp: "Scalp",
+                daytrade: "Daytrade",
+                save: "Save",
+                usdjpyLog: "USDJPY Log",
+                eurusdLog: "EURUSD Log",
+                goldusdLog: "GOLD_USD Log",
+                btcusdtLog: "BTCUSDT Log",
+                information: "Information",
+                infoDesc1: "Phantom Alert generates real-time trading signals using MT5 data and provides information via LINE notifications and a Web UI.",
+                features: "Features:",
+                feature1: "• Multi-currency pair, multi-timeframe support",
+                feature2: "• Optimized trading logic",
+                feature3: "• LINE notification function",
+                feature4: "• Real-time monitoring and settings via Web UI",
+                disclaimer: "Disclaimer:",
+                disclaimerText: "The signals provided by Phantom Alert are based on historical data analysis and do not guarantee future market movements. Investment decisions are at your own risk.",
+                contact: "Contact:",
+                contactText: "If you have any questions or requests, please contact us at support@phantom-alert.com.",
+                signPanelTab: "SIGN PANEL",
+                settingsTab: "SETTINGS",
+                logsTab: "LOGS",
+                infoTab: "INFO",
+                bgmOn: "BGM: ON",
+                bgmOff: "BGM: OFF",
+                langJa: "日本語",
+                langEn: "English"
+            }
+        };
+
+        // テキストを更新する関数
+        function updateTexts(lang) {
+            document.querySelectorAll('[data-lang-key]').forEach(element => {
+                const key = element.getAttribute('data-lang-key');
+                if (translations[lang] && translations[lang][key]) {
+                    if (element.tagName === 'OPTION') {
+                        // optionタグのテキスト更新は不要（valueが言語に依存しないため）
+                    } else {
+                        element.textContent = translations[lang][key];
+                    }
+                }
+            });
+            bgmToggleButton.textContent = isBgmPlaying ? translations[lang].bgmOn : translations[lang].bgmOff;
+            langToggleButton.textContent = (lang === 'ja') ? translations.en.langEn : translations.ja.langJa;
+            const saveMessage = document.getElementById('saveMessage');
+            if (saveMessage.style.opacity === '1') {
+                saveMessage.textContent = (lang === 'ja') ? '設定が保存されました！' : 'Settings saved!';
+            }
+        }
+
+        // --- ログ表示に関するJavaScriptコード ---
+
+        // ログを表示する関数 (バックエンドから取得するJSONデータ形式に対応)
+        function displayLogs(logData, elementId) {
+            const logContainer = document.getElementById(elementId);
+            if (!logContainer) {
+                console.error(`Log container with ID ${elementId} not found.`);
+                return;
+            }
+
+            logContainer.innerHTML = ''; // 既存のログをクリア
+
+            if (!logData || logData.length === 0) {
+                logContainer.innerHTML = `<div class="log-line neutral">${(currentLang === 'ja') ? 'ログファイルが見つからないか空です。' : 'Log file not found or empty.'}</div>`;
+                return;
+            }
+
+            logData.forEach(log => {
+                const logLine = document.createElement('div');
+                logLine.classList.add('log-line');
+
+                let logContent = ``;
+                let typeClass = 'neutral'; 
+                // log.type が定義されていない場合（バックエンドのパースが不完全な場合など）のフォールバック
+                const logType = log.type || (log.message && log.message.includes("ERROR") ? "ERROR" : (log.message && (log.message.includes("Signal:") || log.message.includes("シグナル:")) ? "SIGNAL" : "INFO"));
+
+                switch (logType) {
+                    case 'SIGNAL':
+                        logContent = `[${log.timestamp}] SIGNAL (${log.symbol || 'N/A'}-${log.timeframe || 'N/A'}): ${log.type || 'N/A'} - Price: ${log.price || 'N/A'}, Reason: ${log.reasons ? log.reasons.join(', ') : 'N/A'}`;
+                        typeClass = (log.signal && log.signal.toLowerCase() === 'buy') ? 'buy' : 'sell'; // signal_info['type']ではなく、signal_info['signal']を使う
+                        break;
+                    case 'ORDER':
+                        logContent = `[${log.timestamp}] ORDER (${log.pair || 'N/A'}): ${log.status || 'N/A'} - Price: ${log.price || 'N/A'}, Volume: ${log.volume || '1.0'} Lot`;
+                        typeClass = 'buy'; // Order is generally a result of a buy/sell signal
+                        break;
+                    case 'POSITION':
+                        // 損益が損失の場合のみ表示
+                        if (log.profit && String(log.profit).startsWith('-')) { // profit can be number or string
+                            logContent = `[${log.timestamp}] POSITION (${log.pair || 'N/A'}): ${log.status || 'N/A'} - Profit: ${log.profit}`;
+                            typeClass = 'sell';
+                        } else {
+                            // 利益の場合はN/A、またはシンプルな表示
+                            logContent = `[${log.timestamp}] POSITION (${log.pair || 'N/A'}): ${log.status || 'N/A'} - Volume: ${log.volume || '1.0'} Lot`;
+                            typeClass = 'neutral';
+                        }
+                        break;
+                    case 'INFO':
+                        logContent = `[${log.timestamp}] INFO: ${log.message}`;
+                        typeClass = 'neutral';
+                        break;
+                    case 'WARNING':
+                        logContent = `[${log.timestamp}] WARNING: ${log.message}`;
+                        typeClass = 'neutral'; // Maybe orange later
+                        break;
+                    case 'ERROR':
+                        logContent = `[${log.timestamp}] ERROR: ${log.message}`;
+                        typeClass = 'sell';
+                        break;
+                    default:
+                        // Fallback for any other log types
+                        logContent = `[${log.timestamp || 'N/A'}] ${log.message || 'Unknown Log'}`;
+                        typeClass = 'neutral';
+                }
+
+                logLine.classList.add(typeClass);
+                logLine.textContent = logContent;
+                logContainer.appendChild(logLine);
+            });
+
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // リアルタイムログを取得して表示する新しい関数
+        async function fetchAndDisplayLogsForPair(currencyPair, elementId) {
+            try {
+                const response = await fetch(`/api/logs/${currencyPair}`); // Flaskサーバーの新しいログAPIエンドポイントを使用
+                if (!response.ok) {
+                    // エラーレスポンスでもJSONを返すようにweb_server.pyを修正しているので、ここではOKステータスをチェックしない
+                    // ただし、ネットワークエラーなどはここでキャッチ
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const logs = await response.json();
+                displayLogs(logs, elementId);
+            } catch (error) {
+                console.error(`Error fetching logs for ${currencyPair}:`, error);
+                const logContainer = document.getElementById(elementId);
+                if (logContainer) {
+                    logContainer.innerHTML = `<div class="log-line sell">${(currentLang === 'ja') ? 'ログの取得に失敗しました:' : 'Failed to fetch logs:'} ${error.message}</div>`;
+                }
+            }
+        }
+
+        // すべてのログを更新する関数 (APIから取得するように変更)
+        function updateAllLogs() {
+            fetchAndDisplayLogsForPair('USDJPY', 'log-usdjpy');
+            fetchAndDisplayLogsForPair('EURUSD', 'log-eurusd');
+            fetchAndDisplayLogsForPair('GOLD_USD', 'log-gold');
+            fetchAndDisplayLogsForPair('BTCUSDT', 'log-btc');
+        }
+        
+        // --- シグナルデータ更新 ---
+        async function updateSignalData() {
+            try {
+                const selectSymbolElem = document.getElementById('selectSymbol');
+                const selectTimeframeElem = document.getElementById('selectTimeframe');
+                
+                // 設定パネルの現在の選択値を取得
+                const selectedSymbol = selectSymbolElem ? selectSymbolElem.value : "USDJPY"; // デフォルト値
+                const selectedTimeframe = selectTimeframeElem ? selectTimeframeElem.value : "M1"; // デフォルト値
+
+                const response = await fetch('/api/signals'); // ★★★ /api/signals に修正 ★★★
+                if (!response.ok) {
+                    // エラーレスポンスでもJSONを返すようにweb_server.pyを修正しているので、ここではOKステータスをチェックしない
+                    // ただし、ネットワークエラーなどはここでキャッチ
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const allSignals = await response.json(); // signals.jsonはリスト形式で返される
+
+                let data = null;
+                // まず選択されたシンボルと時間足に完全に一致する最新のシグナルを探す
+                if (allSignals && allSignals.length > 0) {
+                    const filteredSignals = allSignals.filter(s => 
+                        s.symbol === selectedSymbol && s.timeframe === selectedTimeframe
+                    );
+                    if (filteredSignals.length > 0) {
+                        data = filteredSignals[filteredSignals.length - 1]; // 最も新しいもの
+                    } else {
+                        // 選択されたシンボルと時間足のシグナルがなければ、リストの最新のシグナルをフォールバックとして使用
+                        data = allSignals[allSignals.length - 1];
+                        console.warn(`No signal for ${selectedSymbol}-${selectedTimeframe}. Displaying overall latest signal.`);
+                    }
+                }
+                
+                // もし何らかの理由で data が見つからない場合は、デフォルト値を設定
+                if (!data) {
+                    console.warn("No signal data found for current selection or no signals available.");
+                    // デフォルト表示
+                    document.getElementById('signalSymbol').textContent = 'N/A';
+                    document.getElementById('signalTimeframe').textContent = 'N/A';
+                    document.getElementById('currentPrice').textContent = 'N/A';
+                    document.getElementById('signalDesc').textContent = (currentLang === 'ja') ? 'シグナルデータがありません。' : 'No signal data available.';
+                    document.getElementById('signalType').textContent = 'NONE';
+                    document.getElementById('signalType').classList.remove('buy', 'sell');
+                    document.getElementById('signalEntry').textContent = 'N/A';
+                    document.getElementById('signalTP').textContent = 'N/A';
+                    document.getElementById('signalSL').textContent = 'N/A';
+                    document.getElementById('signalChart').src = '/static/default_chart.png';
+                    return; // これ以上処理しない
+                }
+
+                const signalSymbolElem = document.getElementById('signalSymbol');
+                const signalTimeframeElem = document.getElementById('signalTimeframe');
+                const currentPriceElem = document.getElementById('currentPrice');
+                const signalDescElem = document.getElementById('signalDesc');
+                const signalTypeElem = document.getElementById('signalType');
+                const signalEntryElem = document.getElementById('signalEntry');
+                const signalTPElem = document.getElementById('signalTP');
+                const signalSLElem = document.getElementById('signalSL');
+                const signalChartElem = document.getElementById('signalChart');
+
+                // データ更新
+                signalSymbolElem.textContent = data.symbol || 'N/A';
+                signalTimeframeElem.textContent = data.timeframe || 'N/A';
+                // priceが文字列の場合は数値に変換を試みる
+                let priceValue = parseFloat(data.price);
+                currentPriceElem.textContent = (!isNaN(priceValue)) ? priceValue.toFixed(3) : 'N/A';
+
+                // 言語に応じて説明文を切り替える
+                signalDescElem.textContent = (currentLang === 'ja' ? (data.desc || '説明なし') : (data.desc_en || 'No description'));
+
+                // シグナルタイプと色付け
+                signalTypeElem.textContent = (data.signal || 'NONE').toUpperCase();
+                signalTypeElem.classList.remove('buy', 'sell'); // 既存クラスを削除
+                if (data.signal && data.signal.toLowerCase() === 'buy') {
+                    signalTypeElem.classList.add('buy');
+                    buySound.play().catch(e => console.log("BUYサウンド再生エラー:", e));
+                } else if (data.signal && data.signal.toLowerCase() === 'sell') {
+                    signalTypeElem.classList.add('sell');
+                    sellSound.play().catch(e => console.log("SELLサウンド再生エラー:", e));
+                }
+
+                // entry, tp, sl も数値変換を試みる
+                let entryValue = parseFloat(data.entry);
+                signalEntryElem.textContent = (!isNaN(entryValue)) ? entryValue.toFixed(3) : 'N/A';
+                let tpValue = parseFloat(data.tp);
+                signalTPElem.textContent = (!isNaN(tpValue)) ? tpValue.toFixed(3) : 'N/A';
+                let slValue = parseFloat(data.sl);
+                signalSLElem.textContent = (!isNaN(slValue)) ? slValue.toFixed(3) : 'N/A';
+
+                // チャート画像更新（画像URLがあればそれを使用）
+                if (data.image_url) {
+                    signalChartElem.src = data.image_url;
+                } else if (data.image) {
+                    // ローカルパスの場合（例: static/chart.png）
+                    // ★ /static/default_chart.png のように、staticディレクトリからの相対パスになることを確認してください
+                    signalChartElem.src = `/static/${data.image}`; 
+                } else {
+                    signalChartElem.src = '/static/default_chart.png'; // デフォルト画像
+                }
+
+            } catch (error) {
+                console.error("シグナルデータの取得に失敗しました:", error);
+                // エラー時もデフォルト表示
+                document.getElementById('signalSymbol').textContent = 'N/A';
+                document.getElementById('signalTimeframe').textContent = 'N/A';
+                document.getElementById('currentPrice').textContent = 'N/A';
+                document.getElementById('signalDesc').textContent = (currentLang === 'ja') ? 'エラー: シグナルデータがありません。' : 'Error: No signal data available.';
+                document.getElementById('signalType').textContent = 'NONE';
+                document.getElementById('signalType').classList.remove('buy', 'sell');
+                document.getElementById('signalEntry').textContent = 'N/A';
+                document.getElementById('signalTP').textContent = 'N/A';
+                document.getElementById('signalSL').textContent = 'N/A';
+                document.getElementById('signalChart').src = '/static/default_chart.png';
+            }
+        }
+
+
+        // --- 設定の保存 ---
+        document.getElementById('saveSettings').addEventListener('click', async () => {
+            clickSound.play();
+            const symbol = document.getElementById('selectSymbol').value;
+            const timeframe = document.getElementById('selectTimeframe').value;
+            const mode = document.querySelector('input[name="mode"]:checked').value;
+
+            currentSymbol = symbol;
+            currentTimeframe = timeframe;
+            currentMode = mode;
+
+            try {
+                const response = await fetch('/update_settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ symbol, timeframe, logic: currentLogic, mode }),
+                });
+                const data = await response.json();
+                const saveMessage = document.getElementById('saveMessage');
+                if (data.status === 'success') { // Python側は 'success' を返している
+                    saveMessage.textContent = (currentLang === 'ja') ? '設定が保存されました！' : 'Settings saved!';
+                    saveMessage.style.opacity = 1;
+                    setTimeout(() => {
+                        saveMessage.style.opacity = 0;
+                    }, 2000);
+                }
+            } catch (error) {
+                console.error('設定の保存に失敗しました:', error);
+                const saveMessage = document.getElementById('saveMessage');
+                saveMessage.textContent = (currentLang === 'ja') ? '設定の保存に失敗しました。' : 'Failed to save settings.';
+                saveMessage.style.opacity = 1;
+                setTimeout(() => {
+                    saveMessage.style.opacity = 0;
+                }, 2000);
+            }
+            // 設定が変更されたら、直ちにシグナルデータを更新
+            updateSignalData();
+        });
+
+
+        // --- ページロード時の処理 ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // 初期画面のタイトルとボタンを3秒後にフェードイン
+            setTimeout(() => {
+                titleContainer.style.opacity = 1;
+                startButton.style.opacity = 1; // フェードイン時に表示
+            }, 3000); // 3秒後にフェードイン開始
+
+            // スタートボタンクリック時の処理
+            startButton.addEventListener('click', () => {
+                clickSound.play();
+                initialHomePage.classList.add('fade-out'); // フェードアウト開始
+                setTimeout(() => {
+                    initialHomePage.style.display = 'none'; // 非表示にする
+                    mainUiContainer.style.display = 'flex'; // メインUIをflex表示にする
+                    mainUiContainer.classList.add('active'); // メインUIをフェードイン
+                    // BGM自動再生 (ユーザー操作後に許可される)
+                    bgm.play().then(() => {
+                        isBgmPlaying = true;
+                        bgmToggleButton.textContent = translations[currentLang].bgmOn;
+                        bgmToggleButton.classList.add('active'); // BGM ON状態を視覚的に表示
+                    }).catch(e => console.log("BGM再生エラー（ユーザー操作後）:", e));
+                    showPage('page1', document.querySelector('.tab-button')); // 最初のタブ（Sign Panel）を表示
+                    updateSignalData(); // 初回シグナルデータ更新
+                    updateAllLogs(); // 初回ログ更新
+                }, 1000); // フェードアウトと同じ秒数で非表示にする
+            });
+
+            // BGMトグルボタンのイベントリスナー
+            bgmToggleButton.addEventListener('click', () => {
+                clickSound.play();
+                if (isBgmPlaying) {
+                    bgm.pause();
+                    isBgmPlaying = false;
+                    bgmToggleButton.textContent = translations[currentLang].bgmOff;
+                    bgmToggleButton.classList.remove('active');
+                } else {
+                    bgm.play().catch(e => console.log("BGM再生エラー:", e));
+                    isBgmPlaying = true;
+                    bgmToggleButton.textContent = translations[currentLang].bgmOn;
+                    bgmToggleButton.classList.add('active');
+                }
+            });
+
+            // 言語トグルボタンのイベントリスナー
+            langToggleButton.addEventListener('click', () => {
+                clickSound.play();
+                currentLang = (currentLang === 'ja') ? 'en' : 'ja';
+                updateTexts(currentLang);
+                // 言語切り替え時にログも更新
+                if (document.getElementById('page3').classList.contains('active')) {
+                    updateAllLogs();
+                }
+            });
+
+            // 初期テキスト設定 (日本語で起動)
+            updateTexts(currentLang);
+
+            // ログを定期的に更新（例: 5秒ごと）
+            setInterval(updateAllLogs, 5000); 
+            // シグナルを定期的に更新（例: 3秒ごと）
+            setInterval(updateSignalData, 3000); 
+        });
+
+        // ページ表示切り替え関数
+        function showPage(pageId, clickedButton) {
+            clickSound.play();
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.getElementById(pageId).classList.add('active');
+
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            clickedButton.classList.add('active');
+
+            // ログページに切り替わった場合、ログを更新
+            if (pageId === 'page3') {
+                updateAllLogs();
+            }
+            // サインパネルに切り替わった場合、シグナルデータを更新
+            if (pageId === 'page1') {
+                updateSignalData();
+            }
+        }
+    </script>
+</body>
+</html>

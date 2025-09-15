@@ -1,0 +1,14 @@
+2025/06/15 19:54:41.09 - Batch file started. 
+2025/06/15 19:54:41.10 - Attempting to change directory to "C:\Users\pc\OneDrive\Desktop\phantom_alert_bot\". 
+2025/06/15 19:54:41.11 - Successfully changed directory to "C:\Users\pc\OneDrive\Desktop\phantom_alert_bot". 
+2025/06/15 19:54:41.13 - Attempting to activate virtual environment. 
+2025/06/15 19:54:41.21 - Virtual environment activated. 
+2025/06/15 19:54:41.21 - Attempting to run Python app.py. 
+2025/06/16 16:12:16.65 - Successfully changed directory to "C:\Users\pc\OneDrive\Desktop\phantom_alert_bot". 
+2025/06/16 16:12:16.66 - Attempting to activate virtual environment. 
+2025/06/16 16:12:16.74 - Virtual environment activated. 
+2025/06/16 16:12:16.74 - Attempting to run Python app.py. 
+2025/06/16 16:12:27.76 - Successfully changed directory to "C:\Users\pc\OneDrive\Desktop\phantom_alert_bot". 
+2025/06/16 16:12:27.77 - Attempting to activate virtual environment. 
+2025/06/16 16:12:27.85 - Virtual environment activated. 
+2025/06/16 16:12:27.85 - Attempting to run Python app.py. 
