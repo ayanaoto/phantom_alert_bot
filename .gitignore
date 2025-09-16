@@ -1,15 +1,42 @@
-﻿# Python
+﻿# ---- Python
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
 *.pyd
-.env
+*.so
+
+# ---- Virtualenv
 .venv/
 venv/
+ENV/
+env/
 
-# VS Code
-.vscode/
-
-# OS
+# ---- OS/Editor
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
+
+# ---- Logs & temp
+log/
+logs/
+*.log
+tmp/
+temp/
+*.tmp
+*.bak
+
+# ---- Build / packaging
+build/
+dist/
+*.egg-info/
+pip-wheel-metadata/
+
+# ---- Secrets
+.env
+.env.*
+
+# ---- Node (もし使っている場合)
+node_modules/
+
+# ---- LFSで管理するので zip は ignore しない（※ *.zip は書かない）
