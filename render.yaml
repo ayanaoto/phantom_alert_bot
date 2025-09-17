@@ -1,0 +1,26 @@
+﻿services:
+  - type: web
+    name: phantom-alert-bot
+    env: python
+    plan: free
+    region: singapore
+    autoDeploy: true
+    healthCheckPath: /
+    buildCommand: |
+      git lfs install
+      git lfs pull
+      pip install -U pip
+      pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers=2 --threads=8 --timeout=120
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: FLASK_ENV
+        value: production
+      # 必要に応じて秘密情報（APIキー等）は Render ダッシュボード側で追加（valueは空のままでOK）
+      - key: MT5_LOGIN
+        sync: false
+      - key: MT5_PASSWORD
+        sync: false
+      - key: MT5_SERVER
+        sync: false
