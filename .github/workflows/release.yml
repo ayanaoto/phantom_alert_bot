@@ -1,0 +1,37 @@
+name: Release bundle
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true   # LFS???????
+
+      - name: Create zip bundle
+        run: |
+          set -e
+          if [ -d static ] && [ -d charts ]; then
+            zip -r static-bundle.zip static charts
+          elif [ -d static ]; then
+            zip -r static-bundle.zip static
+          elif [ -d charts ]; then
+            zip -r static-bundle.zip charts
+          else
+            echo "No static or charts directory; skipping."
+          fi
+
+      - name: Create GitHub Release and upload zip
+        if: ${{ hashFiles('**/static-bundle.zip') != '' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          files: static-bundle.zip
