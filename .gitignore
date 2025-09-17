@@ -40,3 +40,5 @@ pip-wheel-metadata/
 node_modules/
 
 # ---- LFSで管理するので zip は ignore しない（※ *.zip は書かない）
+log/
+*.log
