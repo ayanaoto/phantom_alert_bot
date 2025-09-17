@@ -1,5 +1,5 @@
 flask
-MetaTrader5
+MetaTrader5>=5 ; platform_system == "Windows"
 pandas
 pytz
 mplfinance
