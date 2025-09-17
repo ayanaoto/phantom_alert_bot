@@ -13,3 +13,4 @@ setuptools
 playsound==1.2.2
 html5lib
 beautifulsoup4
+gunicorn
